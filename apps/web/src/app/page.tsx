@@ -31,10 +31,37 @@ export default function HomePage() {
             No olvidamos. Honramos. Seguimos unidos.
           </strong>
         </p>
-        <div style={{ width: '60px', height: '1px', background: '#C9A227', margin: '1.5rem auto', opacity: 0.6 }} />
-        <p style={{ color: '#3d3d3d', fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-          Plataforma memorial · Próximamente
-        </p>
+        <div style={{
+          width: '60px',
+          height: '1px',
+          background: '#C9A227',
+          margin: '1.5rem auto',
+          opacity: 0.6,
+        }} />
+        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link href="/memorial" style={{
+            padding: '0.75rem 2rem',
+            border: '1px solid #C9A227',
+            color: '#C9A227',
+            textDecoration: 'none',
+            fontSize: '0.7rem',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+          }}>
+            Encender una vela
+          </Link>
+          <Link href="/apoyo" style={{
+            padding: '0.75rem 2rem',
+            border: '1px solid #3d3d3d',
+            color: '#8a8a8a',
+            textDecoration: 'none',
+            fontSize: '0.7rem',
+            letterSpacing: '0.2em',
+            textTransform: 'uppercase',
+          }}>
+            Buscar ayuda
+          </Link>
+        </div>
       </div>
     </main>
   )

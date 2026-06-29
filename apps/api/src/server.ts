@@ -3,6 +3,7 @@ import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
+import dbPlugin from './plugins/db.js'
 import candleRoutes from './routes/candles/index.js'
 import authRoutes from './routes/auth/index.js'
 import testimoniesRoutes from './routes/testimonies/index.js'
@@ -33,6 +34,10 @@ await app.register(rateLimit, {
   timeWindow: '1 minute',
 })
 
+// Base de datos — primero que todo
+await app.register(dbPlugin)
+
+// Rutas
 await app.register(authRoutes, { prefix: '/api/v1/auth' })
 await app.register(candleRoutes, { prefix: '/api/v1/candles' })
 await app.register(testimoniesRoutes, { prefix: '/api/v1/testimonies' })
