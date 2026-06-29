@@ -1,11 +1,39 @@
-import { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = {
-  title: 'Acceso administración',
-  robots: { index: false, follow: false },
-}
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function AdminLoginPage() {
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const router = useRouter()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+
+    try {
+      const res = await fetch('/api/v1/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ password }),
+      })
+
+      if (res.ok || res.redirected) {
+        router.push('/admin/velas')
+      } else {
+        setError('Contraseña incorrecta')
+      }
+    } catch {
+      setError('Error de conexión')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <main style={{
       minHeight: '100vh',
@@ -40,7 +68,7 @@ export default function AdminLoginPage() {
         }}>
           Acceso restringido
         </h1>
-        <form action="/api/v1/admin/login" method="POST">
+        <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: '1rem' }}>
             <label style={{
               display: 'block',
@@ -54,7 +82,8 @@ export default function AdminLoginPage() {
             </label>
             <input
               type="password"
-              name="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
               required
               autoFocus
               style={{
@@ -66,12 +95,18 @@ export default function AdminLoginPage() {
                 fontSize: '0.9rem',
                 outline: 'none',
                 fontFamily: 'Inter, sans-serif',
-                boxSizing: 'border-box',
+                boxSizing: 'border-box' as const,
               }}
             />
           </div>
+          {error && (
+            <p style={{ color: '#CC1B1B', fontSize: '0.8rem', marginBottom: '1rem' }}>
+              {error}
+            </p>
+          )}
           <button
             type="submit"
+            disabled={loading}
             style={{
               width: '100%',
               background: 'transparent',
@@ -81,11 +116,12 @@ export default function AdminLoginPage() {
               fontSize: '0.7rem',
               letterSpacing: '0.2em',
               textTransform: 'uppercase',
-              cursor: 'pointer',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              opacity: loading ? 0.5 : 1,
               fontFamily: 'Inter, sans-serif',
             }}
           >
-            Entrar
+            {loading ? 'Verificando...' : 'Entrar'}
           </button>
         </form>
       </div>

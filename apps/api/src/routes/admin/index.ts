@@ -41,7 +41,7 @@ const adminRoutes: FastifyPluginAsync<{ sql: Sql }> = async (fastify, opts) => {
         maxAge: 60 * 60 * 8,
         path: '/',
       })
-      .redirect('/admin/velas')
+      .send({ success: true })
   })
 
   // GET /api/v1/admin/logout
