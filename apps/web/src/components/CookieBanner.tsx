@@ -1,5 +1,12 @@
 'use client'
 
+declare global {
+  interface Window {
+    dataLayer: Record<string, unknown>[]
+    __GTM_ID?: string
+  }
+}
+
 import { useState, useEffect } from 'react'
 
 type ConsentState = 'pending' | 'accepted' | 'rejected'
