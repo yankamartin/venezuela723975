@@ -63,8 +63,8 @@ jobs:
             cd /var/www/venezuela723975
             npm install
             npm run build
-            pm2 restart v723975-api || pm2 start /var/www/venezuela723975/apps/api/dist/server.js --name v723975-api --log /var/log/venezuela723975/api.log
-            pm2 restart v723975-web || pm2 start /var/www/venezuela723975/apps/web/.next/standalone/apps/web/server.js --name v723975-web --log /var/log/venezuela723975/web.log
+            cp -r apps/web/.next/static apps/web/.next/standalone/apps/web/.next/static
+            pm2 startOrRestart ecosystem.config.js
             pm2 save
             echo "✓ Deploy completado en $(date)"
           ENDSSH
