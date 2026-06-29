@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { analytics } from '../../lib/analytics'
 
 interface CandleCardProps {
   candle: {
@@ -32,6 +33,7 @@ export function CandleCard({ candle, onFlame }: CandleCardProps) {
         setFlameCount(data.flameCount)
         setIsLit(true)
         onFlame?.(candle.id, data.flameCount)
+        analytics.candleFlameIgnited(candle.id)
       } else if (data.alreadyLit) {
         setIsLit(true)
       }

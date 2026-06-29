@@ -1,5 +1,5 @@
 'use client'
-
+import { analytics } from '../../lib/analytics'
 import { useState } from 'react'
 
 export function NewCandleForm({ onSuccess }: { onSuccess?: () => void }) {
@@ -38,8 +38,13 @@ export function NewCandleForm({ onSuccess }: { onSuccess?: () => void }) {
           message: form.message || undefined,
         }),
       })
-      if (res.ok) { setSubmitted(true); onSuccess?.() }
-      else setError('Hubo un problema. Por favor intenta de nuevo.')
+      if (res.ok) {
+        setSubmitted(true)
+        analytics.candleSubmitted(form.victimLocation)
+        onSuccess?.()
+      } else {
+        setError('Hubo un problema. Por favor intenta de nuevo.')
+      }
     } catch {
       setError('Error de conexión. Por favor intenta de nuevo.')
     } finally { setIsSubmitting(false) }
@@ -48,12 +53,16 @@ export function NewCandleForm({ onSuccess }: { onSuccess?: () => void }) {
   if (submitted) return (
     <div style={{ textAlign: 'center', padding: '2rem 0' }}>
       <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🕯</div>
-      <h3 style={{ fontFamily: 'Georgia, serif', color: '#C9A227',
-        fontSize: '1.1rem', fontWeight: '400', marginBottom: '0.75rem' }}>
+      <h3 style={{
+        fontFamily: 'Georgia, serif', color: '#C9A227',
+        fontSize: '1.1rem', fontWeight: '400', marginBottom: '0.75rem'
+      }}>
         Tu tributo ha sido recibido
       </h3>
-      <p style={{ color: '#8a8a8a', fontSize: '0.85rem', lineHeight: '1.7',
-        maxWidth: '360px', margin: '0 auto' }}>
+      <p style={{
+        color: '#8a8a8a', fontSize: '0.85rem', lineHeight: '1.7',
+        maxWidth: '360px', margin: '0 auto'
+      }}>
         Será revisado y publicado en el muro en breve. Gracias por honrar su memoria.
       </p>
     </div>
@@ -92,8 +101,10 @@ export function NewCandleForm({ onSuccess }: { onSuccess?: () => void }) {
           onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
           placeholder="Comparte un recuerdo, un mensaje de amor..."
           style={{ ...inputStyle, resize: 'none', lineHeight: '1.6' }} />
-        <p style={{ fontSize: '0.65rem', color: '#3d3d3d',
-          textAlign: 'right', marginTop: '0.25rem' }}>
+        <p style={{
+          fontSize: '0.65rem', color: '#3d3d3d',
+          textAlign: 'right', marginTop: '0.25rem'
+        }}>
           {form.message.length}/2000
         </p>
       </div>
@@ -111,8 +122,10 @@ export function NewCandleForm({ onSuccess }: { onSuccess?: () => void }) {
         }}>
         {isSubmitting ? 'Enviando...' : 'Encender su vela'}
       </button>
-      <p style={{ fontSize: '0.65rem', color: '#3d3d3d',
-        textAlign: 'center', lineHeight: '1.6' }}>
+      <p style={{
+        fontSize: '0.65rem', color: '#3d3d3d',
+        textAlign: 'center', lineHeight: '1.6'
+      }}>
         Tu tributo será revisado antes de publicarse para proteger la dignidad de los recordados.
       </p>
     </form>
