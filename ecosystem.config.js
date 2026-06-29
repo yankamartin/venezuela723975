@@ -12,6 +12,7 @@ module.exports = {
         REDIS_URL: 'redis://127.0.0.1:6379',
         JWT_SECRET: 'v6iR0fKj23ZMe9QpL5zY7MVS/rNG5D0SjWPpTpk9iPKuo4wn8p0thF1jGMTS3P+e',
         JWT_EXPIRES_IN: '7d',
+        ADMIN_PASSWORD_HASH: '5a896b2f361a84a8b72af3eb454ce4e33b2846b0faf29b4e385cf074ef945cb3',
       },
       log_file: '/var/log/venezuela723975/api.log',
       error_file: '/var/log/venezuela723975/api-error.log',

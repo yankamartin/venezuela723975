@@ -3,6 +3,7 @@ import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
 import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
+import cookie from '@fastify/cookie'
 import postgres from 'postgres'
 
 const app = Fastify({
@@ -28,6 +29,7 @@ await app.register(cors, {
 })
 await app.register(jwt, { secret: process.env.JWT_SECRET ?? 'dev_secret' })
 await app.register(rateLimit, { max: 100, timeWindow: '1 minute' })
+await app.register(cookie)
 
 // Importar rutas pasando sql como opción
 const { default: candleRoutes } = await import('./routes/candles/index.js')
@@ -36,6 +38,7 @@ const { default: testimoniesRoutes } = await import('./routes/testimonies/index.
 const { default: locationsRoutes } = await import('./routes/locations/index.js')
 const { default: organizationsRoutes } = await import('./routes/organizations/index.js')
 const { default: missingRoutes } = await import('./routes/missing/index.js')
+const { default: adminRoutes } = await import('./routes/admin/index.js')
 
 await app.register(candleRoutes, { prefix: '/api/v1/candles', sql })
 await app.register(authRoutes, { prefix: '/api/v1/auth' })
