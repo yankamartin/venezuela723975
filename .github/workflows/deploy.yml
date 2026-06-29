@@ -1,0 +1,90 @@
+name: Deploy venezuela723975.com
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Digital Ocean
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Build producción
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_API_URL: https://venezuela723975.com/api/v1
+          NEXT_PUBLIC_SITE_URL: https://venezuela723975.com
+
+      - name: Configurar SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Añadir known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Sincronizar archivos al servidor
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='.env.local' \
+            --exclude='*.log' \
+            ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/venezuela723975/
+
+      - name: Instalar dependencias en servidor y reiniciar
+        run: |
+          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
+            set -e
+            cd /var/www/venezuela723975
+
+            echo "→ Instalando dependencias..."
+            npm ci --omit=dev
+
+            echo "→ Reiniciando API..."
+            pm2 describe v723975-api > /dev/null 2>&1 \
+              && pm2 restart v723975-api \
+              || pm2 start "node apps/api/dist/server.js" \
+                  --name v723975-api \
+                  --log /var/log/venezuela723975/api.log \
+                  --error /var/log/venezuela723975/api-error.log
+
+            echo "→ Reiniciando Web..."
+            pm2 describe v723975-web > /dev/null 2>&1 \
+              && pm2 restart v723975-web \
+              || pm2 start "node apps/web/.next/standalone/server.js" \
+                  --name v723975-web \
+                  --log /var/log/venezuela723975/web.log \
+                  --error /var/log/venezuela723975/web-error.log \
+                  -e "PORT=3000"
+
+            pm2 save
+            echo "✓ Deploy completado en $(date)"
+          ENDSSH
+
+      - name: Verificar que la app responde
+        run: |
+          sleep 5
+          curl -f -s -o /dev/null -w "%{http_code}" https://venezuela723975.com \
+            && echo "✓ Sitio respondiendo correctamente" \
+            || echo "⚠ El sitio no responde aún — revisar logs"
