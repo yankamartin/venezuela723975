@@ -60,23 +60,11 @@ jobs:
             cd /var/www/venezuela723975
 
             chown -R root:root /var/www/venezuela723975
-
-            echo "→ Reiniciando API..."
-            pm2 describe v723975-api > /dev/null 2>&1 \
-              && pm2 restart v723975-api \
-              || pm2 start /var/www/venezuela723975/apps/api/dist/server.js \
-                  --name v723975-api \
-                  --log /var/log/venezuela723975/api.log \
-                  --error /var/log/venezuela723975/api-error.log
-
-            echo "→ Reiniciando Web..."
-            pm2 describe v723975-web > /dev/null 2>&1 \
-              && pm2 restart v723975-web \
-              || pm2 start /var/www/venezuela723975/apps/web/.next/standalone/apps/web/server.js \
-                  --name v723975-web \
-                  --log /var/log/venezuela723975/web.log \
-                  --error /var/log/venezuela723975/web-error.log
-
+            cd /var/www/venezuela723975
+            npm install
+            npm run build
+            pm2 restart v723975-api || pm2 start /var/www/venezuela723975/apps/api/dist/server.js --name v723975-api --log /var/log/venezuela723975/api.log
+            pm2 restart v723975-web || pm2 start /var/www/venezuela723975/apps/web/.next/standalone/apps/web/server.js --name v723975-web --log /var/log/venezuela723975/web.log
             pm2 save
             echo "✓ Deploy completado en $(date)"
           ENDSSH
