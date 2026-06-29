@@ -21,7 +21,8 @@ await app.register(cors, {
   origin: [
     'https://venezuela723975.com',
     'https://www.venezuela723975.com',
-    ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000'] : []),
+    'http://localhost:3000',
+    'http://localhost:3001',
   ],
   credentials: true,
 })

@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: v723975_postgres
+    environment:
+      POSTGRES_DB: venezuela723975
+      POSTGRES_USER: v723975
+      POSTGRES_PASSWORD: dev_password_local
+    ports:
+      - "5434:5432"
+    volumes:
+      - v723975_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U v723975 -d venezuela723975"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: v723975_redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - v723975_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  v723975_postgres_data:
+  v723975_redis_data:
