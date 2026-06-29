@@ -60,8 +60,6 @@ jobs:
             cd /var/www/venezuela723975
 
             chown -R root:root /var/www/venezuela723975
-            echo "→ Instalando dependencias..."
-            npm ci --omit=dev
 
             echo "→ Reiniciando API..."
             pm2 describe v723975-api > /dev/null 2>&1 \
