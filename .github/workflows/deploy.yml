@@ -50,9 +50,10 @@ jobs:
             --exclude='.env' \
             --exclude='.env.local' \
             --exclude='*.log' \
+            --exclude='assets' \
             ./ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/venezuela723975/
 
-      - name: Instalar dependencias en servidor y reiniciar
+      - name: Reiniciar servicios en servidor
         run: |
           ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'ENDSSH'
             set -e
@@ -64,7 +65,7 @@ jobs:
             echo "→ Reiniciando API..."
             pm2 describe v723975-api > /dev/null 2>&1 \
               && pm2 restart v723975-api \
-              || pm2 start "node apps/api/dist/server.js" \
+              || pm2 start /var/www/venezuela723975/apps/api/dist/server.js \
                   --name v723975-api \
                   --log /var/log/venezuela723975/api.log \
                   --error /var/log/venezuela723975/api-error.log
@@ -72,19 +73,23 @@ jobs:
             echo "→ Reiniciando Web..."
             pm2 describe v723975-web > /dev/null 2>&1 \
               && pm2 restart v723975-web \
-              || pm2 start "node apps/web/.next/standalone/server.js" \
+              || pm2 start /var/www/venezuela723975/apps/web/.next/standalone/apps/web/server.js \
                   --name v723975-web \
                   --log /var/log/venezuela723975/web.log \
-                  --error /var/log/venezuela723975/web-error.log \
-                  -e "PORT=3000"
+                  --error /var/log/venezuela723975/web-error.log
 
             pm2 save
             echo "✓ Deploy completado en $(date)"
           ENDSSH
 
-      - name: Verificar que la app responde
+      - name: Verificar que el sitio responde
         run: |
-          sleep 5
-          curl -f -s -o /dev/null -w "%{http_code}" https://venezuela723975.com \
-            && echo "✓ Sitio respondiendo correctamente" \
-            || echo "⚠ El sitio no responde aún — revisar logs"
+          sleep 8
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://venezuela723975.com)
+          echo "HTTP Status: $STATUS"
+          if [ "$STATUS" = "200" ]; then
+            echo "✓ Sitio respondiendo correctamente"
+          else
+            echo "⚠ Status inesperado: $STATUS"
+            exit 1
+          fi
