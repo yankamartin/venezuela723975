@@ -1,4 +1,5 @@
 import type { FastifyPluginAsync } from 'fastify'
+import type { Sql } from 'postgres'
 import { z } from 'zod'
 
 const createCandleSchema = z.object({
@@ -9,39 +10,24 @@ const createCandleSchema = z.object({
   authorName: z.string().max(120).optional(),
 })
 
-const candleRoutes: FastifyPluginAsync = async (fastify) => {
+const candleRoutes: FastifyPluginAsync<{ sql: Sql }> = async (fastify, opts) => {
+  const sql = opts.sql
 
-  // GET /api/v1/candles — listar velas aprobadas
-  fastify.get('/', async (req, reply) => {
+  fastify.get('/', async (req) => {
     const { page = 1, limit = 20, featured } = req.query as any
     const offset = (Number(page) - 1) * Number(limit)
 
-    const db = fastify.db
-
-    const [{ count }] = await db`
+    const [{ count }] = await sql`
       SELECT COUNT(*)::int as count FROM candles WHERE is_approved = true
     `
-
-    const candles = await db`
-      SELECT
-        id,
-        victim_name,
-        victim_age,
-        victim_location,
-        message,
-        photo_url,
-        flame_count,
-        is_featured,
-        created_at
+    const candles = await sql`
+      SELECT id, victim_name, victim_age, victim_location, message,
+             photo_url, flame_count, is_featured, created_at
       FROM candles
       WHERE is_approved = true
-      ${featured ? db`AND is_featured = true` : db``}
-      ORDER BY
-        ${featured ? db`flame_count DESC` : db`created_at DESC`}
-      LIMIT ${Number(limit)}
-      OFFSET ${offset}
+      ORDER BY created_at DESC
+      LIMIT ${Number(limit)} OFFSET ${offset}
     `
-
     return {
       data: candles.map(c => ({
         id: c.id,
@@ -61,14 +47,11 @@ const candleRoutes: FastifyPluginAsync = async (fastify) => {
     }
   })
 
-  // GET /api/v1/candles/stats
   fastify.get('/stats', async () => {
-    const db = fastify.db
-    const [stats] = await db`
+    const [stats] = await sql`
       SELECT
-        COUNT(*)::int as total_candles,
-        COALESCE(SUM(flame_count), 0)::int as total_flames,
-        COUNT(*) FILTER (WHERE is_approved = true)::int as approved_candles
+        COUNT(*) FILTER (WHERE is_approved = true)::int as approved_candles,
+        COALESCE(SUM(flame_count), 0)::int as total_flames
       FROM candles
     `
     return {
@@ -77,26 +60,15 @@ const candleRoutes: FastifyPluginAsync = async (fastify) => {
     }
   })
 
-  // POST /api/v1/candles — crear vela
   fastify.post('/', async (req, reply) => {
     const body = createCandleSchema.safeParse(req.body)
     if (!body.success) {
-      return reply.status(400).send({ error: 'Datos inválidos', details: body.error.flatten() })
+      return reply.status(400).send({ error: 'Datos inválidos' })
     }
-
-    const db = fastify.db
-    const ip = req.ip
-    const ipHash = Buffer.from(ip).toString('base64')
-
-    const [candle] = await db`
-      INSERT INTO candles (
-        victim_name,
-        victim_age,
-        victim_location,
-        message,
-        ip_hash,
-        is_approved
-      ) VALUES (
+    const ipHash = Buffer.from(req.ip).toString('base64')
+    const [candle] = await sql`
+      INSERT INTO candles (victim_name, victim_age, victim_location, message, ip_hash, is_approved)
+      VALUES (
         ${body.data.victimName},
         ${body.data.victimAge ?? null},
         ${body.data.victimLocation ?? null},
@@ -106,7 +78,6 @@ const candleRoutes: FastifyPluginAsync = async (fastify) => {
       )
       RETURNING id, victim_name, created_at
     `
-
     return reply.status(201).send({
       id: candle.id,
       victimName: candle.victim_name,
@@ -117,41 +88,25 @@ const candleRoutes: FastifyPluginAsync = async (fastify) => {
     })
   })
 
-  // POST /api/v1/candles/:id/flame — encender vela
   fastify.post<{ Params: { id: string } }>('/:id/flame', async (req, reply) => {
     const { id } = req.params
-    const ip = req.ip
-    const ipFingerprint = Buffer.from(ip).toString('base64')
-    const db = fastify.db
+    const ipFingerprint = Buffer.from(req.ip).toString('base64')
 
-    // Verificar que la vela existe y está aprobada
-    const [candle] = await db`
-      SELECT id, flame_count FROM candles
-      WHERE id = ${id} AND is_approved = true
+    const [candle] = await sql`
+      SELECT id, flame_count FROM candles WHERE id = ${id} AND is_approved = true
     `
-    if (!candle) {
-      return reply.status(404).send({ error: 'Vela no encontrada' })
-    }
+    if (!candle) return reply.status(404).send({ error: 'Vela no encontrada' })
 
-    // Verificar si ya encendió esta vela
-    const [existing] = await db`
-      SELECT id FROM candle_flames
-      WHERE candle_id = ${id} AND ip_fingerprint = ${ipFingerprint}
+    const [existing] = await sql`
+      SELECT id FROM candle_flames WHERE candle_id = ${id} AND ip_fingerprint = ${ipFingerprint}
     `
     if (existing) {
       return { success: true, flameCount: candle.flame_count, alreadyLit: true }
     }
 
-    // Insertar llama — el trigger actualiza flame_count automáticamente
-    await db`
-      INSERT INTO candle_flames (candle_id, ip_fingerprint)
-      VALUES (${id}, ${ipFingerprint})
-    `
+    await sql`INSERT INTO candle_flames (candle_id, ip_fingerprint) VALUES (${id}, ${ipFingerprint})`
 
-    const [updated] = await db`
-      SELECT flame_count FROM candles WHERE id = ${id}
-    `
-
+    const [updated] = await sql`SELECT flame_count FROM candles WHERE id = ${id}`
     return { success: true, flameCount: updated.flame_count, alreadyLit: false }
   })
 }
